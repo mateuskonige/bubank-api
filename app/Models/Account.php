@@ -12,10 +12,21 @@ class Account extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
+        'user_id',
         'balance',
     ];
 
     protected $casts = [
         'balance' => 'integer'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
 }

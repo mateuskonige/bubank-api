@@ -11,21 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('accounts', function (Blueprint $table) {
+        Schema::create('audit_logs', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
             $table->foreignUuid('user_id')
-                ->nullable()
                 ->constrained()
-                ->cascadeOnUpdate()
                 ->cascadeOnDelete();
 
-            $table->enum('type', ['savings', 'checking']);
-
-            $table->unsignedInteger('balance')->default(0);
+            $table->string('action');
+            $table->json('details');
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -34,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('accounts');
+        Schema::dropIfExists('audit_logs');
     }
 };

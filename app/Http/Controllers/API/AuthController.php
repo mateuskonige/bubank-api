@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserPasswordRequest;
+use App\Models\Account;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -31,13 +33,26 @@ class AuthController extends Controller implements HasMiddleware
 
     public function register(StoreUserRequest $request)
     {
-        $data = $request->validated();
+        $validated = $request->validated();
 
-        User::create([
-            'name' => $data->name,
-            'email' => $data->email,
-            'password' => bcrypt($data->password),
-        ]);
+        DB::beginTransaction();
+        try {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+            ]);
+            Account::create([
+                'user_id' => $user->id,
+                'type' => $validated['account_type'],
+            ]);
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw response()->json([
+                'message' => $e->getMessage()
+            ]);
+        }
 
         if (!$token = auth()->attempt($request->only(['email', 'password']))) {
             return response()->json([
@@ -65,7 +80,14 @@ class AuthController extends Controller implements HasMiddleware
 
     public function me()
     {
-        return response()->json(auth()->user());
+        return response()->json(
+            array_merge(
+                auth()->user()->toArray(),
+                [
+                    'account' => auth()->user()->account()->first(),
+                ]
+            )
+        );
     }
 
     public function logout()

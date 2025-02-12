@@ -4,20 +4,50 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginUserRequest;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserPasswordRequest;
 use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller implements HasMiddleware
 {
-
     public static function middleware(): array
     {
         return [
-            new Middleware('auth', except: ['login']),
+            new Middleware('auth', except: [
+                'register',
+                'login',
+                'forgot_password',
+                'reset_password'
+            ]),
         ];
+    }
+
+    public function register(StoreUserRequest $request)
+    {
+        $data = $request->validated();
+
+        User::create([
+            'name' => $data->name,
+            'email' => $data->email,
+            'password' => bcrypt($data->password),
+        ]);
+
+        if (!$token = auth()->attempt($request->only(['email', 'password']))) {
+            return response()->json([
+                'errors' => [
+                    'email' => ['These credentials do not match our records.'],
+                ],
+            ], 422);
+        };
+
+        return $this->respond_with_token($token);
     }
 
     public function login(LoginUserRequest $request)
@@ -25,29 +55,19 @@ class AuthController extends Controller implements HasMiddleware
         if (!$token = auth()->attempt($request->only(['email', 'password']))) {
             return response()->json([
                 'errors' => [
-                    'email' => ['Essas credenciais não correspondem aos nossos registros.'],
+                    'email' => ['These credentials do not match our records.'],
                 ],
             ], 422);
         }
 
-        return $this->respondWithToken($token);
+        return $this->respond_with_token($token);
     }
 
-    /**
-     * Get the authenticated User.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function me()
     {
         return response()->json(auth()->user());
     }
 
-    /**
-     * Log the user out (Invalidate the token).
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function logout()
     {
         auth()->logout();
@@ -55,23 +75,12 @@ class AuthController extends Controller implements HasMiddleware
         return response()->json(['message' => 'Successfully logged out']);
     }
 
-    /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function refresh()
     {
-        return $this->respondWithToken(auth()->refresh());
+        return $this->respond_with_token(auth()->refresh());
     }
 
-    /**
-     * Get the token array structure.
-     *
-     * @param  string  $token
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function respondWithToken($token)
+    protected function respond_with_token($token)
     {
         return response()->json([
             'access_token' => $token,
@@ -80,21 +89,47 @@ class AuthController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function change_password(Request $request)
+    public function forgot_password(Request $request)
     {
         $validated = $request->validate([
-            'password' => 'required|confirmed',
+            'email' => 'required|string|email|max:255',
         ]);
 
-        $user = User::findOrFail(auth()->user()->id);
-        $user->password = Hash::make($validated['password']);
+        if (!User::where('email', $validated['email'])->exists()) {
+            return response()->json([
+                'message' => 'Usuário não encontrado.',
+            ]);
+        }
 
-        $user->save();
-
-        $this->logout();
+        $status = Password::sendResetLink([
+            'email' => $validated['email']
+        ]);
 
         return response()->json([
-            'message' => 'Password alterado com sucesso!',
+            'status' => __($status),
+        ]);
+    }
+
+    public function reset_password(UpdateUserPasswordRequest $request)
+    {
+        $validated = $request->validated();
+
+        $status = Password::reset(
+            $validated,
+            function ($user) use ($validated) {
+                $user->forceFill([
+                    'password' => Hash::make($validated['password']),
+                    'remember_token' => Str::random(10),
+                ])->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        $status == Password::PASSWORD_RESET;
+
+        return response()->json([
+            'status' => __($status),
         ]);
     }
 }

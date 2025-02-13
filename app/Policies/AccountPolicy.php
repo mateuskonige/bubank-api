@@ -43,9 +43,11 @@ class AccountPolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Account $account): bool
+    public function delete(User $user, Account $account): Response
     {
-        return false;
+        return $user->id === $account->user_id
+            ? Response::allow()
+            : Response::deny('You do not own this account.');
     }
 
     /**

@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Enums\TransactionStatus;
-use App\Enums\TransactionType;
+use App\Enums\TransactionStatusEnum;
+use App\Enums\TransactionTypeEnum;
 use App\Models\Transaction;
 use App\Models\Account;
 use Illuminate\Bus\Queueable;
@@ -50,13 +50,13 @@ class ProcessTransaction implements ShouldQueue
 
                 // Processa a transação com base no tipo
                 switch ($this->transaction->type) {
-                    case TransactionType::DEPOSIT->value:
+                    case TransactionTypeEnum::DEPOSIT->value:
                         $this->processDeposit($account);
                         break;
-                    case TransactionType::WITHDRAWAL->value:
+                    case TransactionTypeEnum::WITHDRAWAL->value:
                         $this->processWithdrawal($account);
                         break;
-                    case TransactionType::TRANSFER->value:
+                    case TransactionTypeEnum::TRANSFER->value:
                         $this->processTransfer($account);
                         break;
                     default:
@@ -64,12 +64,12 @@ class ProcessTransaction implements ShouldQueue
                 }
 
                 // Atualiza o status da transação para "concluído"
-                $this->transaction->update(['status' => TransactionStatus::COMPLETED->value]);
+                $this->transaction->update(['status' => TransactionStatusEnum::COMPLETED->value]);
 
                 Log::info("Transação {$this->transaction->id} processada com sucesso.");
             } catch (\Exception $e) {
                 // Em caso de erro, atualiza o status da transação para "falha"
-                $this->transaction->update(['status' => TransactionStatus::FAILED->value, 'error_message' => $e->getMessage()]);
+                $this->transaction->update(['status' => TransactionStatusEnum::FAILED->value, 'error_message' => $e->getMessage()]);
                 Log::error("Erro ao processar transação {$this->transaction->id}: " . $e->getMessage());
 
                 // Relança a exceção para que a job seja reprocessada (se configurado)

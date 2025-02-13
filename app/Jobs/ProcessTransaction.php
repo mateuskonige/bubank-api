@@ -37,45 +37,48 @@ class ProcessTransaction implements ShouldQueue
      */
     public function handle()
     {
-        DB::transaction(function () {
-            try {
-                // Bloqueia a conta para evitar condições de corrida
-                $account = Account::where('id', $this->transaction->account_id)
-                    ->lockForUpdate()
-                    ->first();
+        DB::beginTransaction();
+        try {
+            // Bloqueia a conta para evitar condições de corrida
+            $account = Account::where('id', $this->transaction->account_id)
+                ->lockForUpdate()
+                ->first();
 
-                if (!$account) {
-                    throw new \Exception("Conta não encontrada.");
-                }
-
-                // Processa a transação com base no tipo
-                switch ($this->transaction->type) {
-                    case TransactionTypeEnum::DEPOSIT->value:
-                        $this->processDeposit($account);
-                        break;
-                    case TransactionTypeEnum::WITHDRAWAL->value:
-                        $this->processWithdrawal($account);
-                        break;
-                    case TransactionTypeEnum::TRANSFER->value:
-                        $this->processTransfer($account);
-                        break;
-                    default:
-                        throw new \Exception("Tipo de transação inválido.");
-                }
-
-                // Atualiza o status da transação para "concluído"
-                $this->transaction->update(['status' => TransactionStatusEnum::COMPLETED->value]);
-
-                Log::info("Transação {$this->transaction->id} processada com sucesso.");
-            } catch (\Exception $e) {
-                // Em caso de erro, atualiza o status da transação para "falha"
-                $this->transaction->update(['status' => TransactionStatusEnum::FAILED->value, 'error_message' => $e->getMessage()]);
-                Log::error("Erro ao processar transação {$this->transaction->id}: " . $e->getMessage());
-
-                // Relança a exceção para que a job seja reprocessada (se configurado)
-                throw $e;
+            if (!$account) {
+                throw new \Exception("Conta não encontrada.");
             }
-        });
+
+            // Processa a transação com base no tipo
+            switch ($this->transaction->type) {
+                case TransactionTypeEnum::DEPOSIT->value:
+                    $this->processDeposit($account);
+                    break;
+                case TransactionTypeEnum::WITHDRAWAL->value:
+                    $this->processWithdrawal($account);
+                    break;
+                case TransactionTypeEnum::TRANSFER->value:
+                    $this->processTransfer($account);
+                    break;
+                default:
+                    throw new \Exception("Tipo de transação inválido.");
+            }
+
+            // Atualiza o status da transação para "concluído"
+            $this->transaction->update(['status' => TransactionStatusEnum::COMPLETED->value]);
+
+            Log::info("Transação {$this->transaction->id} processada com sucesso.");
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Em caso de erro, atualiza o status da transação para "falha"
+            $this->transaction->update(['status' => TransactionStatusEnum::FAILED->value]);
+
+            Log::error("Erro ao processar transação {$this->transaction->id}: " . $e->getMessage());
+
+            // Relança a exceção para que a job seja reprocessada (se configurado)
+            throw $e;
+        }
     }
 
     /**
@@ -96,7 +99,7 @@ class ProcessTransaction implements ShouldQueue
      */
     protected function processWithdrawal(Account $account)
     {
-        if ($account->balance < $this->transaction->amount) {
+        if ((int) $account->balance < (int) $this->transaction->amount) {
             throw new \Exception("Saldo insuficiente para saque.");
         }
 

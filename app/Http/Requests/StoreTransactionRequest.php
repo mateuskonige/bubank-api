@@ -26,7 +26,7 @@ class StoreTransactionRequest extends FormRequest
         return [
             "type" => ["required"],
             "amount" => 'required|integer|min:1',
-            "destination_account_id" => "nullable|string|required_if:type,withdrawal|exists:accounts,id",
+            "destination_account_id" => "nullable|string|required_if:type,transfer|exists:accounts,id",
         ];
     }
 }

@@ -9,7 +9,7 @@ Route::get('/', function () {
     return response()->json(["version" => "Laravel v" . Illuminate\Foundation\Application::VERSION]);
 });
 
-Route::prefix('auth')->group(function () {
+Route::prefix('auth')->middleware('throttle:global')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
     Route::post('logout', [AuthController::class, 'logout']);
@@ -19,7 +19,7 @@ Route::prefix('auth')->group(function () {
     Route::post('reset-password', [AuthController::class, 'reset_password'])->name('password.reset');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'throttle:auth'])->group(function () {
     Route::delete('accounts/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
     Route::post('accounts/{id}/restore', [AccountController::class, 'restore'])->name('accounts.restore');
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\AccountType;
+use App\Enums\AccountTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,7 +26,7 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'min:3', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'account_type' => ['required', Rule::enum(AccountType::class)],
+            'account_type' => ['required', Rule::enum(AccountTypeEnum::class)],
             'password' => ['required', 'confirmed', 'min:8', 'max:255'],
         ];
     }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\TransactionType;
+use App\Enums\TransactionTypeEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,8 +25,8 @@ class StoreTransactionRequest extends FormRequest
     {
         return [
             "type" => ["required"],
-            "amount" => 'required|min:1',
-            "destination_account_id" => "nullable|exists:accounts,id",
+            "amount" => 'required|integer|min:1',
+            "destination_account_id" => "nullable|string|required_if:type,withdrawal|exists:accounts,id",
         ];
     }
 }

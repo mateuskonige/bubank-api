@@ -23,8 +23,8 @@ class UpdateUserPasswordRequest extends FormRequest
     {
         return [
             'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'confirmed', 'min:8', 'max:255'],
             'token' => ['required'],
+            'password' => ['required', 'confirmed', 'min:8', 'max:255'],
         ];
     }
 }

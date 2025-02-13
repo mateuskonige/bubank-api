@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginUserRequest;
@@ -31,6 +31,10 @@ class AuthController extends Controller implements HasMiddleware
         ];
     }
 
+    /**
+     * Register a new user.
+     * @unauthenticated
+     */
     public function register(StoreUserRequest $request)
     {
         $validated = $request->validated();
@@ -65,6 +69,10 @@ class AuthController extends Controller implements HasMiddleware
         return $this->respond_with_token($token);
     }
 
+    /**
+     * Login a user.
+     * @unauthenticated
+     */
     public function login(LoginUserRequest $request)
     {
         if (!$token = auth()->attempt($request->only(['email', 'password']))) {
@@ -78,6 +86,9 @@ class AuthController extends Controller implements HasMiddleware
         return $this->respond_with_token($token);
     }
 
+    /**
+     * Get the authenticated User.
+     */
     public function me()
     {
         return response()->json(
@@ -90,6 +101,10 @@ class AuthController extends Controller implements HasMiddleware
         );
     }
 
+
+    /**
+     * Log the user out (Invalidate the token).
+     */
     public function logout()
     {
         auth()->logout();
@@ -97,20 +112,18 @@ class AuthController extends Controller implements HasMiddleware
         return response()->json(['message' => 'Successfully logged out']);
     }
 
+    /**
+     * Refresh a token.
+     */
     public function refresh()
     {
         return $this->respond_with_token(auth()->refresh());
     }
 
-    protected function respond_with_token($token)
-    {
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60 * 24,
-        ]);
-    }
-
+    /**
+     * Send the reset link email
+     * @unauthenticated
+     */
     public function forgot_password(Request $request)
     {
         $validated = $request->validate([
@@ -132,6 +145,10 @@ class AuthController extends Controller implements HasMiddleware
         ]);
     }
 
+    /**
+     * Reset the password
+     * @unauthenticated
+     */
     public function reset_password(UpdateUserPasswordRequest $request)
     {
         $validated = $request->validated();
@@ -152,6 +169,15 @@ class AuthController extends Controller implements HasMiddleware
 
         return response()->json([
             'status' => __($status),
+        ]);
+    }
+
+    protected function respond_with_token($token)
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60 * 24,
         ]);
     }
 }

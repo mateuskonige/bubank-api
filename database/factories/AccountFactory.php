@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enums\AccountType;
+use App\Enums\AccountTypeEnum;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,8 +20,8 @@ class AccountFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'type' => $this->faker->randomElement(AccountType::cases())->value,
-            'balance' => rand(0, 10000000)
+            'type' => $this->faker->randomElement(AccountTypeEnum::cases())->value,
+            'balance' => rand(0, 1000_00)
         ];
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\API\AccountController;
-use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\API\TransactionController;
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,8 +20,8 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::apiResource('accounts', AccountController::class);
-    Route::get('accounts/{account}/transactions', [AccountController::class, 'getTransactions']);
+    Route::delete('accounts/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
+    Route::post('accounts/{id}/restore', [AccountController::class, 'restore'])->name('accounts.restore');
 
     Route::apiResource('transactions', TransactionController::class);
 });

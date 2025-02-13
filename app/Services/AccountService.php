@@ -2,39 +2,47 @@
 
 namespace App\Services;
 
-use App\Repositories\AccountRepository;
+use App\Models\Account;
 
 class AccountService
 {
-    protected $repository;
-
-    public function __construct(AccountRepository $accountRepository)
+    public function getAll()
     {
-        $this->repository = $accountRepository;
-    }
-
-    public function get()
-    {
-        return $this->repository->getAll();
+        return Account::all();
     }
 
     public function create(array $data)
     {
-        return $this->repository->create($data);
+        return Account::create($data);
     }
 
-    public function getById($model)
+    public function getById(string $id)
     {
-        return $this->repository->getById($model->id);
+        return Account::where('id', $id)->firstOrFail();
     }
 
-    public function update($model, array $data)
+    public function update(Account $account, array $data)
     {
-        return $this->repository->updateById($model->id, $data);
+        return $account->update($data);
     }
 
-    public function delete($model)
+    public function destroy(Account $account)
     {
-        return $this->repository->deleteById($model->id);
+        if ($account->balance > 0) {
+            return response()->json(['message' => 'Account balance is not zero.'], 400);
+        }
+
+        $account->delete();
+
+        return response()->json(['message' => 'Account deleted successfully.'], 204);
+    }
+
+    public function restore(string $id)
+    {
+        $model = Account::withTrashed()->where('id', $id)->firstOrFail();
+
+        $model->restore();
+
+        return response()->json(['message' => 'Account restored successfully.'], 200);
     }
 }

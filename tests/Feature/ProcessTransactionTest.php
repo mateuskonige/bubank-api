@@ -92,7 +92,7 @@ class ProcessTransactionTest extends TestCase
         $this->assertEquals(10000, $account_receiver->fresh()->balance);
     }
 
-    public function test_concurrent_transactions()
+    public function test_20_concurrent_transactions()
     {
         // Cria uma conta com saldo inicial de 100
         $user = User::factory()->create();
@@ -102,8 +102,8 @@ class ProcessTransactionTest extends TestCase
             'balance' => 100
         ]);
 
-        // Cria 10 transações de depósito de 10 unidades cada
-        $transactions = Transaction::factory()->count(10)->create([
+        // Cria 20 transações de depósito de 10 unidades cada
+        $transactions = Transaction::factory()->count(20)->create([
             'account_id' => $account->id,
             'type' => TransactionTypeEnum::DEPOSIT->value,
             'amount' => 10,
@@ -119,7 +119,7 @@ class ProcessTransactionTest extends TestCase
         $updatedAccount = Account::find($account->id);
 
         // Verifica se o saldo final está correto
-        $expectedBalance = 100 + (10 * 10); // Saldo inicial + 10 depósitos de 10
+        $expectedBalance = 100 + (20 * 10); // Saldo inicial + 10 depósitos de 10
         $this->assertEquals($expectedBalance, $updatedAccount->balance);
 
         // Verifica se todas as transações foram marcadas como concluídas
@@ -128,13 +128,13 @@ class ProcessTransactionTest extends TestCase
         }
     }
 
-    public function test_concurrent_withdrawals()
+    public function test_20_concurrent_withdrawals()
     {
         // Cria uma conta com saldo inicial de 200
-        $account = Account::factory()->create(['balance' => 200]);
+        $account = Account::factory()->create(['balance' => 400]);
 
-        // Cria 10 transações de saque de 20 unidades cada
-        $transactions = Transaction::factory()->count(10)->create([
+        // Cria 20 transações de saque de 20 unidades cada
+        $transactions = Transaction::factory()->count(20)->create([
             'account_id' => $account->id,
             'type' => TransactionTypeEnum::WITHDRAWAL->value,
             'amount' => 20,
@@ -150,7 +150,7 @@ class ProcessTransactionTest extends TestCase
         $updatedAccount = Account::find($account->id);
 
         // Verifica se o saldo final está correto
-        $expectedBalance = 200 - (10 * 20); // Saldo inicial - 10 saques de 20
+        $expectedBalance = 400 - (20 * 20); // Saldo inicial - 10 saques de 20
         $this->assertEquals($expectedBalance, $updatedAccount->balance);
 
         // Verifica se todas as transações foram marcadas como concluídas
@@ -159,13 +159,13 @@ class ProcessTransactionTest extends TestCase
         }
     }
 
-    public function test_concurrent_withdrawals_with_insufficient_balance()
+    public function test_20_concurrent_withdrawals_with_insufficient_balance()
     {
         // Cria uma conta com saldo inicial de 100
-        $account = Account::factory()->create(['balance' => 100]);
+        $account = Account::factory()->create(['balance' => 200]);
 
-        // Cria 10 transações de saque de 20 unidades cada
-        $transactions = Transaction::factory()->count(10)->create([
+        // Cria 20 transações de saque de 20 unidades cada
+        $transactions = Transaction::factory()->count(20)->create([
             'account_id' => $account->id,
             'type' => TransactionTypeEnum::WITHDRAWAL->value,
             'amount' => 20,
@@ -187,16 +187,16 @@ class ProcessTransactionTest extends TestCase
         $updatedTransactions = Transaction::whereIn('id', $transactions->pluck('id'))->get();
 
         // Verifica se o saldo final está correto
-        // Apenas 5 saques de 20 devem ser processados (100 / 20 = 5)
-        $expectedBalance = 100 - (5 * 20); // Saldo inicial - 5 saques de 20
+        // Apenas 10 saques de 20 devem ser processados (200 / 20 = 10)
+        $expectedBalance = 200 - (10 * 20); // Saldo inicial - 10 saques de 20
         $this->assertEquals($expectedBalance, $updatedAccount->balance);
 
         // Verifica se 5 transações foram marcadas como falhas (saldo insuficiente)
         $failedTransactions = $updatedTransactions->where('status', TransactionStatusEnum::FAILED->value)->count();
-        $this->assertEquals(5, $failedTransactions);
+        $this->assertEquals(10, $failedTransactions);
 
         // Verifica se 5 transações foram marcadas como concluídas
         $completedTransactions = $updatedTransactions->where('status', TransactionStatusEnum::COMPLETED->value)->count();
-        $this->assertEquals(5, $completedTransactions);
+        $this->assertEquals(10, $completedTransactions);
     }
 }

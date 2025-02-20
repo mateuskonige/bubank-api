@@ -24,9 +24,17 @@ class StoreTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "type" => ["required"],
-            "amount" => 'required|integer|min:1',
-            "destination_account_id" => "nullable|string|required_if:type,transfer|exists:accounts,id",
+            "type" => ['required', Rule::enum(TransactionTypeEnum::class)],
+            "amount" => ['required', 'integer', 'min:1'],
+            "destination_account_id" => "nullable|string|exists:accounts,id",
         ];
     }
+
+    // protected function withValidator($validator)
+    // {
+    //     $validator->sometimes('amount', 'max:' . auth()->user()->account->balance, function ($input) {
+    //         // Aplica a regra "max" apenas se o tipo for "withdrawal" ou "transfer"
+    //         return in_array($input->type, [TransactionTypeEnum::WITHDRAWAL->value, TransactionTypeEnum::TRANSFER->value]);
+    //     });
+    // }
 }

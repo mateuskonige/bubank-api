@@ -139,16 +139,16 @@ class ProcessTransaction implements ShouldQueue
             throw new \Exception("Saldo insuficiente para transferência.");
         }
 
-        // Verifica se o saque excede o limite para o horário
-        if (now()->hour < 8 || now()->hour > 17) {
-            if ($this->transaction->amount > 1_000_00) {
-                throw new \Exception("Limite de saque excedido para o horário.");
-            }
-        } else {
-            if ($this->transaction->amount > 10_000_00) {
-                throw new \Exception("Limite de saque excedido.");
-            }
-        }
+        // // Verifica se o saque excede o limite para o horário
+        // if (now()->hour < 8 || now()->hour > 17) {
+        //     if ($this->transaction->amount > 1_000_00) {
+        //         throw new \Exception("Limite de saque excedido para o horário.");
+        //     }
+        // } else {
+        //     if ($this->transaction->amount > 10_000_00) {
+        //         throw new \Exception("Limite de saque excedido.");
+        //     }
+        // }
 
         // Realiza a transferência
         $sourceAccount->balance -= $this->transaction->amount;

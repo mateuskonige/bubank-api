@@ -23,6 +23,16 @@ class AccountController extends Controller
     }
 
     /**
+     * Get all resource from storage.
+     */
+    public function index()
+    {
+        $response = $this->service->getEligibleForTransfer();
+
+        return response()->json($response);
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Account $account)

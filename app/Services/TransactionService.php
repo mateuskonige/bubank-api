@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\TransactionStatusEnum;
+use App\Enums\TransactionTypeEnum;
 use App\Jobs\ProcessTransaction;
 use App\Models\Account;
 use App\Models\Transaction;
@@ -12,7 +13,14 @@ class TransactionService
 {
     public function get()
     {
-        return Account::all();
+        $transactionsReceived = Transaction::where('destination_account_id', Auth::user()->account->id)->get();
+        $transactionsSent = Transaction::where('account_id', Auth::user()->account->id)->get();
+
+        $transactions = $transactionsReceived->merge($transactionsSent);
+
+        $transactions = $transactions->sortByDesc('created_at')->values();
+
+        return $transactions;
     }
 
     public function create($data)
@@ -23,12 +31,13 @@ class TransactionService
             'account_id' => $account->id,
             'type' => $data['type'],
             'amount' => $data['amount'],
-            'status' => TransactionStatusEnum::PENDING->value
+            'status' => TransactionStatusEnum::PENDING->value,
+            'destination_account_id' => $data['destination_account_id']
         ]);
 
-        $response = ProcessTransaction::dispatch($transaction);
+        ProcessTransaction::dispatch($transaction);
 
-        return $response;
+        return $transaction;
     }
 
     public function getById(string $id)

@@ -22,6 +22,6 @@ class RateLimitServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('global', fn() => Limit::perMinute(60));
-        RateLimiter::for('auth', fn() => Limit::perMinute(5));
+        RateLimiter::for('auth', fn() => Limit::perMinute(15)->by(request()->user()?->id ?: request()->ip()));
     }
 }

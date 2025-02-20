@@ -29,7 +29,7 @@ class TransactionController extends Controller
     {
         $transactions = $this->service->get();
 
-        return TransactionResource::collection($transactions);
+        return response()->json($transactions);
     }
 
     /**
@@ -54,5 +54,17 @@ class TransactionController extends Controller
     public function show(Transaction $transaction)
     {
         return new TransactionResource($transaction);
+    }
+
+    /**
+     * Get the status of a transaction
+     */
+    public function status($id)
+    {
+        $transaction = Transaction::findOrFail($id);
+        return response()->json([
+            'status' => $transaction->status,
+            'message' => $transaction->error_message ?? null,
+        ]);
     }
 }

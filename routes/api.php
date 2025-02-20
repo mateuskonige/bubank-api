@@ -20,8 +20,10 @@ Route::prefix('auth')->middleware('throttle:global')->group(function () {
 });
 
 Route::middleware(['auth', 'throttle:auth'])->group(function () {
+    Route::get('accounts', [AccountController::class, 'index'])->name('accounts.index');
     Route::delete('accounts/{account}', [AccountController::class, 'destroy'])->name('accounts.destroy');
     Route::post('accounts/{id}/restore', [AccountController::class, 'restore'])->name('accounts.restore');
 
-    Route::apiResource('transactions', TransactionController::class);
+    Route::apiResource('transactions', TransactionController::class)->except('update', 'destroy');
+    Route::get('/transactions/{id}/status', [TransactionController::class, 'status'])->name('transactions.status');
 });

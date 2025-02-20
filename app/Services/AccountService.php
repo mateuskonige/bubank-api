@@ -6,9 +6,12 @@ use App\Models\Account;
 
 class AccountService
 {
-    public function getAll()
+    public function getEligibleForTransfer()
     {
-        return Account::all();
+        return Account::join('users', 'accounts.user_id', '=', 'users.id')
+            ->where('users.id', '!=', auth()->id()) // Exclui o usuário logado
+            ->select('accounts.id', 'users.name')
+            ->get();
     }
 
     public function create(array $data)
